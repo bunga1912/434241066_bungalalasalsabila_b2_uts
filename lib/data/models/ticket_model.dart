@@ -2,7 +2,7 @@ class TicketModel {
   final String id;
   final String title;
   final String description;
-  String status; // 'open' | 'in_progress' | 'resolved' | 'closed'
+  String status; // 'pending' | 'assigned' | 'in_progress' | 'forwarded' | 'resolved' | 'closed'
   final String category;
   final String createdBy;
   String? assignedTo;
@@ -20,6 +20,25 @@ class TicketModel {
     required this.createdAt,
     List<TicketHistory>? history,
   }) : history = history ?? [];
+
+  String get statusLabel {
+    switch (status) {
+      case 'pending':
+        return 'Menunggu';
+      case 'assigned':
+        return 'Ditugaskan';
+      case 'in_progress':
+        return 'Diproses';
+      case 'forwarded':
+        return 'Diteruskan ke TS';
+      case 'resolved':
+        return 'Selesai';
+      case 'closed':
+        return 'Ditutup';
+      default:
+        return status;
+    }
+  }
 }
 
 class TicketHistory {
