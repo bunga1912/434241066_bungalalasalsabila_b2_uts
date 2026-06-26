@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/auth_provider.dart';
 import 'login_screen.dart';
+import '../../../admin/presentation/pages/admin_dashboard_screen.dart';
+import '../../../helpdesk/presentation/pages/helpdesk_dashboard_screen.dart';
+import '../../../technical_support/presentation/pages/ts_dashboard_screen.dart';
+import '../../../pengguna/presentation/pengguna_shell.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+
+  static const Color primaryNavy = Color(0xFF042C53);
+  static const Color primaryBlue = Color(0xFF185FA5);
+  static const Color accentGold = Color(0xFFFAC775);
 
   @override
   void initState() {
@@ -35,21 +45,61 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
+    // Tunggu animasi selesai lalu cek session
     Future.delayed(const Duration(milliseconds: 2200), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoginScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
-        );
-      }
+      _navigateBasedOnAuth();
     });
+  }
+
+  void _navigateBasedOnAuth() {
+    final authState = ref.read(authProvider);
+    authState.whenOrNull(
+      data: (user) => _navigate(user?.role),
+      error: (_, __) => _navigate(null),
+    );
+
+    // Kalau masih loading, tunggu
+    if (authState is AsyncLoading) {
+      ref.listenManual(authProvider, (prev, next) {
+        next.whenOrNull(
+          data: (user) => _navigate(user?.role),
+          error: (_, __) => _navigate(null),
+        );
+      });
+    }
+  }
+
+  void _navigate(String? role) {
+    if (!mounted) return;
+
+    Widget targetPage;
+    switch (role) {
+      case 'admin':
+        targetPage = const AdminDashboardScreen();
+        break;
+      case 'helpdesk':
+        targetPage = const HelpdeskDashboardScreen();
+        break;
+      case 'technical_support':
+        targetPage = const TsDashboardScreen();
+        break;
+      case 'user':
+        targetPage = const PenggunaShell();
+        break;
+      default:
+        targetPage = const LoginScreen();
+    }
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 600),
+      ),
+    );
   }
 
   @override
@@ -68,17 +118,12 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF042C53), // navy
-              Color(0xFF185FA5), // biru
-              Color(0xFFFAC775), // kuning gold (aksen)
-            ],
+            colors: [primaryNavy, primaryBlue, accentGold],
             stops: [0.0, 0.6, 1.0],
           ),
         ),
         child: Stack(
           children: [
-            // Background decorative circles
             Positioned(
               top: -60,
               right: -60,
@@ -103,20 +148,6 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
             ),
-            Positioned(
-              top: 120,
-              left: -40,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFFAC775).withOpacity(0.12),
-                ),
-              ),
-            ),
-
-            // Content
             Center(
               child: ScaleTransition(
                 scale: _scaleAnimation,
@@ -156,21 +187,19 @@ class _SplashScreenState extends State<SplashScreen>
                       const Text(
                         'SISTEM TIKET TERPADU',
                         style: TextStyle(
-                          color: Color(0xFFFAC775),
+                          color: accentGold,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 2,
                         ),
                       ),
                       const SizedBox(height: 48),
-                      SizedBox(
+                      const SizedBox(
                         width: 32,
                         height: 32,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFFFAC775),
-                          ),
+                          valueColor: AlwaysStoppedAnimation<Color>(accentGold),
                         ),
                       ),
                     ],
