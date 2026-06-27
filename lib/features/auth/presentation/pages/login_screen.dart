@@ -1,12 +1,12 @@
+import 'package:e_ticketing_helpdesk/features/technical_support/ts_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
-import '../../../admin/presentation/pages/admin_dashboard_screen.dart';
-import '../../../helpdesk/presentation/pages/helpdesk_dashboard_screen.dart';
-import '../../../technical_support/presentation/pages/ts_dashboard_screen.dart';
+import '../../../admin/presentation/admin_shell.dart';
 import 'register_screen.dart';
 import 'reset_password_screen.dart';
 import '../../../pengguna/presentation/pengguna_shell.dart';
+import '../../../helpdesk/presentation/helpdesk_shell.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -68,13 +68,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     Widget targetPage;
     switch (role) {
       case 'admin':
-        targetPage = const AdminDashboardScreen();
+        targetPage = const AdminShell();
         break;
       case 'helpdesk':
-        targetPage = const HelpdeskDashboardScreen();
+        targetPage = const HelpdeskShell();
         break;
-      case 'technical_support':
-        targetPage = const TsDashboardScreen();
+      case 'technical support':
+        targetPage = const TsShell();
         break;
       default:
         targetPage = const PenggunaShell();

@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'pages/pengguna_dashboard_screen.dart';
-import 'pages/pengguna_ticket_list_screen.dart';
-import 'pages/pengguna_history_screen.dart';
+import 'pages/admin_dashboard_screen.dart';
+import 'pages/admin_ticket_list_screen.dart';
+import 'pages/admin_manage_users_screen.dart';
+import 'pages/admin_activity_screen.dart';
 import '../../shared/presentation/pages/profile_screen.dart';
 
-final penggunaNavIndexProvider = StateProvider<int>((ref) => 0);
+final adminNavIndexProvider = StateProvider<int>((ref) => 0);
 
-class PenggunaShell extends ConsumerWidget {
-  const PenggunaShell({super.key});
+class AdminShell extends ConsumerWidget {
+  const AdminShell({super.key});
 
   static const Color primaryNavy = Color(0xFF042C53);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentIndex = ref.watch(penggunaNavIndexProvider);
+    final currentIndex = ref.watch(adminNavIndexProvider);
 
     final pages = [
-      const PenggunaDashboardScreen(),
-      const PenggunaTicketListScreen(),
-      const PenggunaActivityScreen(),
+      const AdminDashboardScreen(),
+      const AdminTicketListScreen(),
+      const AdminManageUsersScreen(),
+      const AdminHistoryScreen(),
       const ProfileScreen(),
     ];
 
@@ -41,8 +43,7 @@ class PenggunaShell extends ConsumerWidget {
         ),
         child: SafeArea(
           child: Padding(
-            padding:
-            const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -58,18 +59,25 @@ class PenggunaShell extends ConsumerWidget {
                   index: 1,
                   currentIndex: currentIndex,
                   icon: Icons.confirmation_number_rounded,
-                  label: 'Tiket Saya',
+                  label: 'Tiket',
                 ),
                 _navItem(
                   ref: ref,
                   index: 2,
+                  currentIndex: currentIndex,
+                  icon: Icons.people_rounded,
+                  label: 'Pengguna',
+                ),
+                _navItem(
+                  ref: ref,
+                  index: 3,
                   currentIndex: currentIndex,
                   icon: Icons.history_rounded,
                   label: 'Aktivitas',
                 ),
                 _navItem(
                   ref: ref,
-                  index: 3,
+                  index: 4,
                   currentIndex: currentIndex,
                   icon: Icons.person_rounded,
                   label: 'Profil',
@@ -91,16 +99,12 @@ class PenggunaShell extends ConsumerWidget {
   }) {
     final isSelected = currentIndex == index;
     return GestureDetector(
-      onTap: () =>
-      ref.read(penggunaNavIndexProvider.notifier).state = index,
+      onTap: () => ref.read(adminNavIndexProvider.notifier).state = index,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
-        padding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? primaryNavy.withOpacity(0.08)
-              : Colors.transparent,
+          color: isSelected ? primaryNavy.withOpacity(0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -115,10 +119,8 @@ class PenggunaShell extends ConsumerWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected
-                    ? FontWeight.bold
-                    : FontWeight.normal,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? primaryNavy : Colors.grey[400],
               ),
             ),

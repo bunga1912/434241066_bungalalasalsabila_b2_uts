@@ -14,4 +14,14 @@ class CommentModel {
     required this.message,
     required this.createdAt,
   });
+  factory CommentModel.fromMap(Map<String, dynamic> map) {
+    return CommentModel(
+      id: map['id'],
+      ticketId: map['ticket_id'],
+      userId: map['user_id'],
+      userName: map['user_name'],
+      message: map['message'],
+      createdAt: DateTime.parse(map['created_at']),
+    );
+  }
 }

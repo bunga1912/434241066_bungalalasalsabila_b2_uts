@@ -15,7 +15,10 @@ class TsDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(tsStatsProvider);
     final ticketsAsync = ref.watch(tsTicketProvider);
-    final tsName = ref.watch(currentTsNameProvider);
+    final user = ref.watch(currentTsProvider);
+    final unreadAsync = ref.watch(tsUnreadCountProvider);
+
+    final displayName = user?.name ?? '-';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1EFE8),
@@ -25,10 +28,11 @@ class TsDashboardScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(tsStatsProvider);
             ref.invalidate(tsTicketProvider);
+            ref.invalidate(tsUnreadCountProvider);
           },
           child: CustomScrollView(
             slivers: [
-              // Header
+              // ── Header ────────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Container(
                   width: double.infinity,
@@ -54,7 +58,7 @@ class TsDashboardScreen extends ConsumerWidget {
                           height: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: accentGold.withOpacity(0.1),
+                            color: accentGold.withValues(alpha: 0.1),
                           ),
                         ),
                       ),
@@ -72,14 +76,14 @@ class TsDashboardScreen extends ConsumerWidget {
                                   Text(
                                     'Selamat datang,',
                                     style: TextStyle(
-                                      color:
-                                      Colors.white.withOpacity(0.85),
+                                      color: Colors.white
+                                          .withValues(alpha: 0.85),
                                       fontSize: 14,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    tsName,
+                                    displayName,
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 24,
@@ -92,7 +96,7 @@ class TsDashboardScreen extends ConsumerWidget {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: purple.withOpacity(0.25),
+                                      color: purple.withValues(alpha: 0.25),
                                       borderRadius:
                                       BorderRadius.circular(8),
                                     ),
@@ -107,30 +111,66 @@ class TsDashboardScreen extends ConsumerWidget {
                                   ),
                                 ],
                               ),
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                      color:
-                                      Colors.white.withOpacity(0.3)),
-                                ),
-                                child: const Icon(
-                                  Icons.notifications_outlined,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
+                              // Notifikasi dengan badge
+                              Stack(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white
+                                          .withValues(alpha: 0.15),
+                                      borderRadius:
+                                      BorderRadius.circular(14),
+                                      border: Border.all(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.3)),
+                                    ),
+                                    child: const Icon(
+                                      Icons.notifications_outlined,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  unreadAsync.when(
+                                    loading: () => const SizedBox(),
+                                    error: (_, __) => const SizedBox(),
+                                    data: (count) => count == 0
+                                        ? const SizedBox()
+                                        : Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: Container(
+                                        padding:
+                                        const EdgeInsets.all(4),
+                                        decoration:
+                                        const BoxDecoration(
+                                          color: Color(0xFFE57373),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Text(
+                                          '$count',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight:
+                                            FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                           const SizedBox(height: 24),
+
                           // Alert tiket forwarded
                           statsAsync.when(
                             loading: () => Container(
                               height: 72,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: const Center(
@@ -149,11 +189,12 @@ class TsDashboardScreen extends ConsumerWidget {
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.12),
+                                  color: Colors.white
+                                      .withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                      color:
-                                      Colors.white.withOpacity(0.2)),
+                                      color: Colors.white
+                                          .withValues(alpha: 0.2)),
                                 ),
                                 child: Row(
                                   children: [
@@ -161,7 +202,7 @@ class TsDashboardScreen extends ConsumerWidget {
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
                                         color:
-                                        purple.withOpacity(0.25),
+                                        purple.withValues(alpha: 0.25),
                                         borderRadius:
                                         BorderRadius.circular(12),
                                       ),
@@ -178,7 +219,7 @@ class TsDashboardScreen extends ConsumerWidget {
                                         CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            '${stats['forwarded']} tiket diteruskan',
+                                            '${(stats['forwarded'] ?? 0) + (stats['in_progress'] ?? 0)} tiket aktif',
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
@@ -186,9 +227,9 @@ class TsDashboardScreen extends ConsumerWidget {
                                             ),
                                           ),
                                           const SizedBox(height: 2),
-                                          const Text(
-                                            'Menunggu penanganan kamu',
-                                            style: TextStyle(
+                                          Text(
+                                            '${stats['forwarded']} diteruskan · ${stats['in_progress']} diproses',
+                                            style: const TextStyle(
                                                 color: Colors.white70,
                                                 fontSize: 12),
                                           ),
@@ -212,7 +253,7 @@ class TsDashboardScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Stats
+              // ── Stats Grid ───────────────────────────────────────────
               SliverPadding(
                 padding: const EdgeInsets.all(20),
                 sliver: SliverToBoxAdapter(
@@ -274,7 +315,7 @@ class TsDashboardScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Tugas Terbaru
+              // ── Tugas Terbaru ────────────────────────────────────────
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                 sliver: SliverToBoxAdapter(
@@ -327,17 +368,27 @@ class TsDashboardScreen extends ConsumerWidget {
 
                           if (recent.isEmpty) {
                             return Container(
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Center(
-                                child: Text(
-                                  'Tidak ada tugas aktif',
-                                  style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 13),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_outline_rounded,
+                                      size: 40,
+                                      color: Colors.grey[300],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Tidak ada tugas aktif',
+                                      style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 13),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
@@ -345,17 +396,17 @@ class TsDashboardScreen extends ConsumerWidget {
 
                           return Column(
                             children: recent.map((t) {
+                              final isForwarded = t.status == 'forwarded';
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 10),
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius:
-                                  BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                      primaryNavy.withOpacity(0.04),
+                                      color: primaryNavy
+                                          .withValues(alpha: 0.04),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
@@ -366,8 +417,7 @@ class TsDashboardScreen extends ConsumerWidget {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color:
-                                        purple.withOpacity(0.1),
+                                        color: purple.withValues(alpha: 0.1),
                                         borderRadius:
                                         BorderRadius.circular(12),
                                       ),
@@ -383,14 +433,42 @@ class TsDashboardScreen extends ConsumerWidget {
                                         crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            t.id,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.grey[400],
-                                            ),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                t.id,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight:
+                                                  FontWeight.bold,
+                                                  color: Colors.grey[400],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 1),
+                                                decoration: BoxDecoration(
+                                                  color: primaryBlue
+                                                      .withValues(alpha: 0.08),
+                                                  borderRadius:
+                                                  BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  t.category,
+                                                  style: TextStyle(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: primaryBlue
+                                                        .withValues(alpha: 0.8),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                          const SizedBox(height: 2),
                                           Text(
                                             t.title,
                                             style: const TextStyle(
@@ -404,14 +482,15 @@ class TsDashboardScreen extends ConsumerWidget {
                                         ],
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: (t.status == 'forwarded'
+                                        color: (isForwarded
                                             ? purple
                                             : accentGold)
-                                            .withOpacity(0.12),
+                                            .withValues(alpha: 0.12),
                                         borderRadius:
                                         BorderRadius.circular(8),
                                       ),
@@ -420,7 +499,7 @@ class TsDashboardScreen extends ConsumerWidget {
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
-                                          color: t.status == 'forwarded'
+                                          color: isForwarded
                                               ? purple
                                               : primaryNavy,
                                         ),
@@ -458,7 +537,7 @@ class TsDashboardScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: primaryNavy.withOpacity(0.05),
+            color: primaryNavy.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -470,7 +549,7 @@ class TsDashboardScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: iconColor ?? color, size: 20),

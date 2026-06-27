@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -22,6 +23,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   static const Color primaryBlue = Color(0xFF185FA5);
   static const Color accentGold = Color(0xFFFAC775);
 
+  final _supabase = Supabase.instance.client;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -36,28 +39,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final response = await _supabase.auth.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        data: {
+          'full_name': _nameController.text.trim(),
+        },
+      );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+
+      if (response.user == null) {
+        _showError('Email sudah terdaftar atau tidak valid.');
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           backgroundColor: primaryNavy,
-          content: const Text('Akun berhasil dibuat! Silakan masuk.'),
-          duration: const Duration(seconds: 1),
+          content: Text('Akun berhasil dibuat! Silakan masuk.'),
+          duration: Duration(seconds: 2),
         ),
       );
 
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
-        }
-      });
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
+    } on AuthException catch (e) {
+      _showError(e.message);
+    } catch (e) {
+      _showError('Terjadi kesalahan. Coba lagi.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.red[700],
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -100,7 +130,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Back button
                         IconButton(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(
@@ -157,7 +186,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Name field
                         _buildLabel('Nama Lengkap'),
                         const SizedBox(height: 8),
                         TextFormField(
@@ -175,7 +203,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Email field
                         _buildLabel('Email'),
                         const SizedBox(height: 8),
                         TextFormField(
@@ -197,7 +224,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Password field
                         _buildLabel('Password'),
                         const SizedBox(height: 8),
                         TextFormField(
@@ -232,7 +258,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Confirm Password field
                         _buildLabel('Konfirmasi Password'),
                         const SizedBox(height: 8),
                         TextFormField(
@@ -268,7 +293,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 28),
 
-                        // Register button
                         SizedBox(
                           width: double.infinity,
                           height: 52,
