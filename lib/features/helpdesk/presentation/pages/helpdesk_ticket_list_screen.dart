@@ -29,8 +29,8 @@ class _HelpdeskTicketListScreenState
             .toList();
       case 'forwarded':
         return tickets.where((t) => t.status == 'forwarded').toList();
-      case 'resolved':
-        return tickets.where((t) => t.status == 'resolved').toList();
+      case 'close':
+        return tickets.where((t) => t.status == 'close').toList();
       default:
         return tickets;
     }
@@ -44,7 +44,7 @@ class _HelpdeskTicketListScreenState
         return accentGold;
       case 'forwarded':
         return const Color(0xFF9575CD);
-      case 'resolved':
+      case 'close':
         return const Color(0xFF4CAF50);
       default:
         return Colors.grey;
@@ -65,12 +65,12 @@ class _HelpdeskTicketListScreenState
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Tandai Selesai?',
+          'Tutup Tiket?',
           style: TextStyle(
               fontWeight: FontWeight.bold, color: primaryNavy),
         ),
         content: Text(
-          'Tiket ${ticket.id} akan ditandai sebagai resolved.',
+          'Tiket ${ticket.id} akan ditutup (close).',
           style: TextStyle(fontSize: 13, color: Colors.grey[600]),
         ),
         actions: [
@@ -84,13 +84,13 @@ class _HelpdeskTicketListScreenState
               Navigator.pop(context);
               await ref
                   .read(helpdeskTicketListProvider.notifier)
-                  .resolveTicket(ticket.id);
+                  .closeTicket(ticket.id);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: const Color(0xFF4CAF50),
                     content:
-                    Text('Tiket ${ticket.id} ditandai selesai'),
+                    Text('Tiket ${ticket.id} ditutup'),
                     duration: const Duration(seconds: 1),
                   ),
                 );
@@ -102,7 +102,7 @@ class _HelpdeskTicketListScreenState
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Ya, Selesai'),
+            child: const Text('Ya, Tutup'),
           ),
         ],
       ),
@@ -197,7 +197,7 @@ class _HelpdeskTicketListScreenState
                           children: [
                             _filterChip('active', 'Aktif'),
                             _filterChip('forwarded', 'Diteruskan'),
-                            _filterChip('resolved', 'Selesai'),
+                            _filterChip('close', 'Selesai'),
                             _filterChip('all', 'Semua'),
                           ],
                         ),
@@ -430,7 +430,7 @@ class _HelpdeskTicketListScreenState
                         onPressed: () => _showResolveDialog(ticket),
                         icon: const Icon(Icons.check_rounded, size: 16),
                         label: const Text(
-                          'Resolve',
+                          'Selesai',
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold),

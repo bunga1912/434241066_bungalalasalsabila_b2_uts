@@ -22,6 +22,13 @@ class _AdminAssignTicketScreenState
   String? _selectedHelpdesk;
   bool _isLoading = false;
 
+  late String _currentStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStatus = widget.ticket.status;
+  }
   void _handleAssign() async {
     if (_selectedHelpdesk == null) return;
 
@@ -42,7 +49,10 @@ class _AdminAssignTicketScreenState
             duration: const Duration(seconds: 1),
           ),
         );
-        Navigator.pop(context, true);
+        Navigator.pop(context, {
+          'success': true,
+          'status': _currentStatus,
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -56,10 +66,22 @@ class _AdminAssignTicketScreenState
       }
     }
   }
-
+  ({String label, Color color}) _statusMeta(String status) {
+    switch (status) {
+      case 'open':
+        return (label: 'Open', color: primaryBlue);
+      case 'in_progress':
+        return (label: 'In Progress', color: accentGold);
+      case 'close':
+        return (label: 'Close', color: Colors.green);
+      default:
+        return (label: status, color: Colors.grey);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final helpdeskListAsync = ref.watch(helpdeskListProvider);
+    final statusMeta = _statusMeta(_currentStatus);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1EFE8),
@@ -160,6 +182,16 @@ class _AdminAssignTicketScreenState
                               const SizedBox(width: 8),
                               _badge(widget.ticket.category, accentGold,
                                   textColor: primaryNavy),
+                              Row(
+                                children: [
+                                  _badge(widget.ticket.id, primaryBlue),
+                                  const SizedBox(width: 8),
+                                  _badge(widget.ticket.category, accentGold,
+                                      textColor: primaryNavy),
+                                  const SizedBox(width: 8),
+                                  _badge(statusMeta.label, statusMeta.color),
+                                ],
+                              ),
                             ],
                           ),
                           const SizedBox(height: 10),

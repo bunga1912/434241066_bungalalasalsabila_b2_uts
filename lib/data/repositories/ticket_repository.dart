@@ -110,7 +110,7 @@ class TicketRepository {
         .insert({
       'title': title,
       'description': description,
-      'status': 'pending',
+      'status': 'open',
       'category': category,
       'created_by': createdBy,
     })
@@ -126,7 +126,7 @@ class TicketRepository {
     // Catat histori awal
     await _addHistory(
       ticketId: ticket.id,
-      status: 'pending',
+      status: 'open',
       description: 'Tiket dibuat',
       actor: createdBy,
     );
@@ -145,14 +145,14 @@ class TicketRepository {
         String actor = 'Admin',
       }) async {
     await _client.from('tickets').update({
-      'status': 'assigned',
+      'status': 'in_progress',
       'assigned_to': helpdeskId,
     }).eq('id', ticketId);
 
     await _addHistory(
       ticketId: ticketId,
-      status: 'assigned',
-      description: 'Tiket di-assign ke helpdesk',
+      status: 'in_progress',
+      description: 'Ditugaskan ke helpdesk dan mulai dikerjakan',
       actor: actor,
     );
   }
@@ -179,47 +179,16 @@ class TicketRepository {
     );
   }
 
-  /// TS mulai mengerjakan tiket
-  Future<void> markInProgress(String ticketId, String actor) async {
-    await _client
-        .from('tickets')
-        .update({'status': 'in_progress'})
-        .eq('id', ticketId);
-
-    await _addHistory(
-      ticketId: ticketId,
-      status: 'in_progress',
-      description: 'Mulai dikerjakan',
-      actor: actor,
-    );
-  }
-
-  /// Tandai tiket selesai (resolved)
-  Future<void> markResolved(String ticketId, String actor) async {
-    await _client
-        .from('tickets')
-        .update({'status': 'resolved'})
-        .eq('id', ticketId);
-
-    await _addHistory(
-      ticketId: ticketId,
-      status: 'resolved',
-      description: 'Tiket ditandai selesai',
-      actor: actor,
-    );
-  }
-
-  /// User menutup tiket (closed) setelah konfirmasi
   Future<void> closeTicket(String ticketId, String actor) async {
     await _client
         .from('tickets')
-        .update({'status': 'closed'})
+        .update({'status': 'close'})
         .eq('id', ticketId);
 
     await _addHistory(
       ticketId: ticketId,
-      status: 'closed',
-      description: 'Tiket ditutup oleh pengguna',
+      status: 'close',
+      description: 'Tiket diselesaikan',
       actor: actor,
     );
   }
@@ -373,12 +342,10 @@ class TicketRepository {
     final list = response as List;
     final stats = <String, int>{
       'total': list.length,
-      'pending': 0,
-      'assigned': 0,
+      'open': 0,
       'in_progress': 0,
       'forwarded': 0,
-      'resolved': 0,
-      'closed': 0,
+      'close': 0,
     };
 
     for (final row in list) {

@@ -41,18 +41,6 @@ class HelpdeskTicketListNotifier
 
   Future<void> refresh() async => await loadTickets();
 
-  /// Mulai kerjakan tiket
-  Future<void> markInProgress(String ticketId) async {
-    await _repository.markInProgress(ticketId, _assigneeId);
-    await loadTickets();
-  }
-
-  /// Selesaikan tiket
-  Future<void> resolveTicket(String ticketId) async {
-    await _repository.markResolved(ticketId, _assigneeId);
-    await loadTickets();
-  }
-
   /// Tutup tiket
   Future<void> closeTicket(String ticketId) async {
     await _repository.closeTicket(ticketId, _assigneeId);
@@ -89,15 +77,14 @@ final helpdeskStatsProvider =
 FutureProvider.autoDispose<Map<String, int>>((ref) async {
   final repo = ref.watch(helpdeskTicketRepositoryProvider);
   final user = ref.watch(currentHelpdeskProvider);
-  if (user == null) return {'assigned': 0, 'forwarded': 0, 'resolved': 0, 'closed': 0, 'in_progress': 0};
+  if (user == null) return {'assigned': 0, 'forwarded': 0, 'close': 0, 'in_progress': 0};
 
   final tickets = await repo.getTicketsByAssignee(user.id);
 
   return {
     'assigned': tickets.where((t) => t.status == 'assigned').length,
     'forwarded': tickets.where((t) => t.status == 'forwarded').length,
-    'resolved': tickets.where((t) => t.status == 'resolved').length,
-    'closed': tickets.where((t) => t.status == 'closed').length,
+    'closed': tickets.where((t) => t.status == 'close').length,
     'in_progress': tickets.where((t) => t.status == 'in_progress').length,
   };
 });

@@ -34,18 +34,6 @@ class TsTicketNotifier
 
   Future<void> refresh() async => await loadTickets();
 
-  /// Mulai kerjakan tiket
-  Future<void> markInProgress(String ticketId) async {
-    await _repository.markInProgress(ticketId, _assigneeId);
-    await loadTickets();
-  }
-
-  /// Selesaikan tiket
-  Future<void> resolveTicket(String ticketId) async {
-    await _repository.markResolved(ticketId, _assigneeId);
-    await loadTickets();
-  }
-
   /// Tutup tiket
   Future<void> closeTicket(String ticketId) async {
     await _repository.closeTicket(ticketId, _assigneeId);
@@ -68,7 +56,7 @@ FutureProvider.autoDispose<Map<String, int>>((ref) async {
   final repo = ref.watch(tsTicketRepositoryProvider);
   final user = ref.watch(currentTsProvider);
   if (user == null) {
-    return {'forwarded': 0, 'in_progress': 0, 'resolved': 0, 'total': 0};
+    return {'forwarded': 0, 'in_progress': 0, 'close': 0, 'total': 0};
   }
 
   final tickets = await repo.getTicketsByAssignee(user.id);
@@ -76,7 +64,7 @@ FutureProvider.autoDispose<Map<String, int>>((ref) async {
   return {
     'forwarded': tickets.where((t) => t.status == 'forwarded').length,
     'in_progress': tickets.where((t) => t.status == 'in_progress').length,
-    'resolved': tickets.where((t) => t.status == 'resolved').length,
+    'close': tickets.where((t) => t.status == 'close').length,
     'total': tickets.length,
   };
 });

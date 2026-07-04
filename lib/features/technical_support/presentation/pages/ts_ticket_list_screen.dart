@@ -28,8 +28,8 @@ class _TsTicketListScreenState
         t.status == 'forwarded' ||
             t.status == 'in_progress')
             .toList();
-      case 'resolved':
-        return tickets.where((t) => t.status == 'resolved').toList();
+      case 'close':
+        return tickets.where((t) => t.status == 'close').toList();
       default:
         return tickets;
     }
@@ -41,7 +41,7 @@ class _TsTicketListScreenState
         return purple;
       case 'in_progress':
         return accentGold;
-      case 'resolved':
+      case 'close':
         return const Color(0xFF4CAF50);
       default:
         return Colors.grey;
@@ -56,21 +56,18 @@ class _TsTicketListScreenState
   }
 
   void _showActionDialog(TicketModel ticket) {
-    final isForwarded = ticket.status == 'forwarded';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          isForwarded ? 'Mulai Kerjakan?' : 'Tandai Selesai?',
-          style: const TextStyle(
+        title: const Text(
+          'Tandai Selesai?',
+          style: TextStyle(
               fontWeight: FontWeight.bold, color: primaryNavy),
         ),
         content: Text(
-          isForwarded
-              ? 'Tiket ${ticket.id} akan ditandai In Progress.'
-              : 'Tiket ${ticket.id} akan ditandai Resolved.',
+          'Tiket ${ticket.id} akan ditutup (close).',
           style: TextStyle(fontSize: 13, color: Colors.grey[600]),
         ),
         actions: [
@@ -82,48 +79,31 @@ class _TsTicketListScreenState
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              if (isForwarded) {
-                await ref
-                    .read(tsTicketProvider.notifier)
-                    .markInProgress(ticket.id);
-              } else {
-                await ref
-                    .read(tsTicketProvider.notifier)
-                    .resolveTicket(ticket.id);
-              }
+              await ref
+                  .read(tsTicketProvider.notifier)
+                  .closeTicket(ticket.id);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    backgroundColor: isForwarded
-                        ? accentGold
-                        : const Color(0xFF4CAF50),
-                    content: Text(
-                      isForwarded
-                          ? 'Tiket ${ticket.id} mulai dikerjakan'
-                          : 'Tiket ${ticket.id} ditandai selesai',
-                    ),
+                    backgroundColor: const Color(0xFF4CAF50),
+                    content: Text('Tiket ${ticket.id} ditandai selesai'),
                     duration: const Duration(seconds: 1),
                   ),
                 );
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: isForwarded
-                  ? accentGold
-                  : const Color(0xFF4CAF50),
-              foregroundColor:
-              isForwarded ? primaryNavy : Colors.white,
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
-            child:
-            Text(isForwarded ? 'Ya, Kerjakan' : 'Ya, Selesai'),
+            child: const Text('Ya, Selesai'),
           ),
         ],
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final ticketsAsync = ref.watch(tsTicketProvider);
@@ -211,7 +191,7 @@ class _TsTicketListScreenState
                         child: Row(
                           children: [
                             _filterChip('active', 'Aktif'),
-                            _filterChip('resolved', 'Selesai'),
+                            _filterChip('close', 'Selesai'),
                             _filterChip('all', 'Semua'),
                           ],
                         ),

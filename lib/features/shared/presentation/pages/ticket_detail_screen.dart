@@ -49,18 +49,14 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'pending':
+      case 'open':
         return const Color(0xFFE57373);
-      case 'assigned':
-        return primaryBlue;
       case 'in_progress':
         return accentGold;
       case 'forwarded':
         return purple;
-      case 'resolved':
+      case 'close':
         return const Color(0xFF4CAF50);
-      case 'closed':
-        return Colors.grey;
       default:
         return Colors.grey;
     }
@@ -68,17 +64,13 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
 
   IconData _statusIcon(String status) {
     switch (status) {
-      case 'pending':
+      case 'open':
         return Icons.hourglass_empty_rounded;
-      case 'assigned':
-        return Icons.assignment_ind_rounded;
       case 'in_progress':
         return Icons.sync_rounded;
       case 'forwarded':
         return Icons.forward_rounded;
-      case 'resolved':
-        return Icons.check_circle_rounded;
-      case 'closed':
+      case 'close':
         return Icons.lock_rounded;
       default:
         return Icons.circle;
@@ -417,30 +409,6 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
             ),
           ),
           const SizedBox(height: 12),
-
-          // Aksi pengguna (jika resolved → bisa close)
-          if (widget.userRole == 'user' && ticket.status == 'resolved')
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: () => _showCloseDialog(ticket),
-                icon: const Icon(Icons.thumb_up_rounded, size: 18),
-                label: const Text(
-                  'Konfirmasi Selesai',
-                  style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4CAF50),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -450,30 +418,24 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
   Widget _buildTrackingTab(TicketModel ticket) {
     // Status steps berurutan
     final allSteps = [
-      'pending',
-      'assigned',
+      'open',
       'in_progress',
       'forwarded',
-      'resolved',
-      'closed',
+      'close',
     ];
 
     final stepLabels = {
-      'pending': 'Menunggu',
-      'assigned': 'Ditugaskan',
+      'open': 'Menunggu',
       'in_progress': 'Sedang Dikerjakan',
       'forwarded': 'Diteruskan ke TS',
-      'resolved': 'Selesai',
-      'closed': 'Ditutup',
+      'close': 'Selesai',
     };
 
     final stepIcons = {
-      'pending': Icons.hourglass_empty_rounded,
-      'assigned': Icons.assignment_ind_rounded,
+      'open': Icons.hourglass_empty_rounded,
       'in_progress': Icons.sync_rounded,
       'forwarded': Icons.forward_rounded,
-      'resolved': Icons.check_circle_rounded,
-      'closed': Icons.lock_rounded,
+      'close': Icons.lock_rounded,
     };
 
     // Tentukan step mana yang sudah dilalui
@@ -1033,51 +995,6 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen>
           ),
         ),
       ],
-    );
-  }
-
-  void _showCloseDialog(TicketModel ticket) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Konfirmasi Selesai?',
-          style: TextStyle(
-              fontWeight: FontWeight.bold, color: primaryNavy),
-        ),
-        content: const Text(
-          'Pastikan masalahmu sudah benar-benar teratasi sebelum menutup tiket.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Batal',
-                style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  backgroundColor: Color(0xFF4CAF50),
-                  content: Text('Tiket berhasil ditutup'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4CAF50),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Ya, Selesai'),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -101,16 +101,14 @@ class TicketModel {
 
   String get statusLabel {
     switch (status) {
-      case 'pending':
-        return 'Menunggu';
+      case 'open':
+        return 'Open';
       case 'assigned':
         return 'Ditugaskan';
       case 'in_progress':
-        return 'Diproses';
+        return 'Sedang_Dikerjakan';
       case 'forwarded':
         return 'Diteruskan ke TS';
-      case 'resolved':
-        return 'Selesai';
       case 'closed':
         return 'Ditutup';
       default:

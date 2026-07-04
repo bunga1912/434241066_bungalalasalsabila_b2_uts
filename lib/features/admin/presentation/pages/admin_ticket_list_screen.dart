@@ -22,17 +22,15 @@ class _AdminTicketListScreenState
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'pending':
+      case 'open':
         return const Color(0xFFE57373);
       case 'assigned':
         return primaryBlue;
       case 'in_progress':
         return accentGold;
       case 'forwarded':
-        return const Color(0xFF9575CD);
-      case 'resolved':
         return const Color(0xFF4CAF50);
-      case 'closed':
+      case 'close':
         return Colors.grey;
       default:
         return Colors.grey;
@@ -155,12 +153,11 @@ class _AdminTicketListScreenState
                         child: Row(
                           children: [
                             _filterChip('all', 'Semua'),
-                            _filterChip('pending', 'Pending'),
+                            _filterChip('open', 'Open'),
                             _filterChip('assigned', 'Assigned'),
-                            _filterChip('in_progress', 'Diproses'),
-                            _filterChip('forwarded', 'Forwarded'),
-                            _filterChip('resolved', 'Selesai'),
-                            _filterChip('closed', 'Closed'),
+                            _filterChip('in_progress', 'Sedang Dikerjakan'),
+                            _filterChip('forwarded', 'Diteruskan ke TS'),
+                            _filterChip('close', 'Selesai'),
                           ],
                         ),
                       ),
@@ -250,7 +247,7 @@ class _AdminTicketListScreenState
 
   Widget _ticketCard(TicketModel ticket) {
     final statusColor = _statusColor(ticket.status);
-    final canAssign = ticket.status == 'pending';
+    final canAssign = ticket.status == 'open';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

@@ -64,56 +64,6 @@ class _PenggunaTicketListScreenState
     return '${diff.inDays} hari lalu';
   }
 
-  void _showCloseDialog(TicketModel ticket) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Konfirmasi Selesai?',
-          style:
-          TextStyle(fontWeight: FontWeight.bold, color: primaryNavy),
-        ),
-        content: Text(
-          'Tiket ${ticket.id} akan ditutup. Pastikan masalahmu sudah benar-benar teratasi.',
-          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child:
-            Text('Batal', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await ref
-                  .read(penggunaTicketProvider.notifier)
-                  .closeTicket(ticket.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    content: Text('Tiket ${ticket.id} berhasil ditutup'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4CAF50),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Ya, Tutup Tiket'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final ticketsAsync = ref.watch(penggunaTicketProvider);
@@ -276,7 +226,6 @@ class _PenggunaTicketListScreenState
 
   Widget _ticketCard(TicketModel ticket) {
     final statusColor = _statusColor(ticket.status);
-    final canClose = ticket.status == 'resolved';
 
     return GestureDetector(
       onTap: () {
@@ -404,35 +353,11 @@ class _PenggunaTicketListScreenState
                 ],
               ),
             ],
-            if (canClose) ...[
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                height: 40,
-                child: ElevatedButton.icon(
-                  onPressed: () => _showCloseDialog(ticket),
-                  icon: const Icon(Icons.thumb_up_rounded, size: 16),
-                  label: const Text(
-                    'Konfirmasi Selesai',
-                    style: TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
-
   Widget _emptyState() {
     return Center(
       child: Column(
