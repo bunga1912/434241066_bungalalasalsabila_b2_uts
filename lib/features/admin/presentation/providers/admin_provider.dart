@@ -143,13 +143,28 @@ final adminRecentActivitiesProvider =
 FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final client = Supabase.instance.client;
 
+  // FIX: sebelumnya cuma select kolom 'actor' (UUID mentah), sehingga
+  // UI menampilkan ID, bukan nama. Sekarang di-join ke tabel users lewat
+  // foreign key ticket_history.actor -> users.id, supaya nama ikut terbawa.
   final response = await client
       .from('ticket_history')
-      .select('id, status, description, timestamp, actor, ticket_id')
+      .select(
+      'id, status, description, timestamp, actor, ticket_id, '
+          'actor_user:users!ticket_history_actor_fkey(name)')
       .order('timestamp', ascending: false)
       .limit(10);
 
-  return List<Map<String, dynamic>>.from(response as List);
+  final rows = List<Map<String, dynamic>>.from(response as List);
+
+  // Ratakan hasil join supaya widget cukup baca key 'actor_name'
+  // tanpa perlu tahu struktur nested map dari Supabase.
+  return rows.map((row) {
+    final actorUser = row['actor_user'] as Map<String, dynamic>?;
+    return {
+      ...row,
+      'actor_name': actorUser?['name'] as String?,
+    };
+  }).toList();
 });
 // ─────────────────────────────────────────────────────────────────────────────
 // PENGUMUMAN

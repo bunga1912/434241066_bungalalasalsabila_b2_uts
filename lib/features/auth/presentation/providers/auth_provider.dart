@@ -36,45 +36,78 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
   }
 
   Future<UserModel?> _getUserData(String userId) async {
+    print('GET_USER_DATA: mulai query untuk userId=$userId');
     try {
       final response = await _supabase
           .from('users')
           .select()
           .eq('id', userId)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          print('GET_USER_DATA: TIMEOUT setelah 15 detik');
+          throw Exception('Timeout mengambil data pengguna');
+        },
+      );
 
-      if (response == null) return null;
+      print('GET_USER_DATA: response diterima = $response');
 
-      return UserModel(
+      if (response == null) {
+        print('GET_USER_DATA: response null (row tidak ditemukan)');
+        return null;
+      }
+
+      final user = UserModel(
         id: response['id'].toString(),
         name: response['name'] ?? '',
         email: response['email'] ?? '',
         role: response['role'] ?? 'user',
       );
+
+      print('GET_USER_DATA: berhasil parse UserModel, role=${user.role}');
+      return user;
     } catch (e) {
-      print('GET USER ERROR: $e');
+      print('GET_USER_DATA ERROR: $e');
       return null;
     }
   }
 
   Future<UserModel> login(String email, String password) async {
+    print('LOGIN: mulai proses login untuk email=$email');
     state = const AsyncValue.loading();
 
     try {
-      final response = await _supabase.auth.signInWithPassword(
+      print('LOGIN: memanggil signInWithPassword...');
+      final response = await _supabase.auth
+          .signInWithPassword(
         email: email,
         password: password,
+      )
+          .timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          print('LOGIN: TIMEOUT signInWithPassword setelah 15 detik');
+          throw Exception(
+              'Koneksi timeout saat login. Cek koneksi internet kamu.');
+        },
       );
+
+      print('LOGIN: signInWithPassword selesai, user=${response.user?.id}');
 
       final authUser = response.user;
 
       if (authUser == null) {
+        print('LOGIN: authUser null, throw Login gagal');
         throw Exception('Login gagal');
       }
 
+      print('LOGIN: mulai _getUserData untuk id=${authUser.id}');
       final userData = await _getUserData(authUser.id);
+      print('LOGIN: _getUserData selesai, userData=$userData');
 
       if (userData == null) {
+        print('LOGIN: userData null, throw data tidak ditemukan');
         throw Exception(
           'Data pengguna tidak ditemukan pada tabel users',
         );
@@ -83,8 +116,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
       state = AsyncValue.data(userData);
       _ref.read(currentUserProvider.notifier).state = userData;
 
+      print('LOGIN: SUKSES, role=${userData.role}');
       return userData;
     } catch (e, st) {
+      print('LOGIN CATCH: $e');
       state = AsyncValue.error(e, st);
       rethrow;
     }
@@ -98,9 +133,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
     state = const AsyncValue.loading();
 
     try {
-      final response = await _supabase.auth.signUp(
+      final response = await _supabase.auth
+          .signUp(
         email: email,
         password: password,
+      )
+          .timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception(
+              'Koneksi timeout saat registrasi. Cek koneksi internet kamu.');
+        },
       );
 
       final authUser = response.user;
@@ -111,7 +154,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
           'name': name,
           'email': email,
           'role': 'user',
-        });
+        }).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            throw Exception(
+                'Koneksi timeout saat menyimpan data pengguna.');
+          },
+        );
       }
 
       state = const AsyncValue.data(null);
@@ -122,7 +171,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
   }
 
   Future<void> sendResetPassword(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    await _supabase.auth.resetPasswordForEmail(email).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {
+        throw Exception('Koneksi timeout saat mengirim reset password.');
+      },
+    );
   }
 
   Future<void> logout() async {

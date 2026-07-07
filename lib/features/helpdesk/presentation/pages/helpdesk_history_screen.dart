@@ -1,102 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/helpdesk_provider.dart';
 
-class HelpdeskHistoryScreen extends StatefulWidget {
+class HelpdeskHistoryScreen extends ConsumerWidget {
   const HelpdeskHistoryScreen({super.key});
 
-  @override
-  State<HelpdeskHistoryScreen> createState() => _HelpdeskHistoryScreenState();
-}
-
-class _HelpdeskHistoryScreenState extends State<HelpdeskHistoryScreen> {
   static const Color primaryNavy = Color(0xFF042C53);
   static const Color primaryBlue = Color(0xFF185FA5);
   static const Color accentGold = Color(0xFFFAC775);
 
-  final List<Map<String, dynamic>> _history = [
-    {
-      'ticketId': 'TKT-006',
-      'title': 'Reset password email kampus',
-      'action': 'Diselesaikan',
-      'time': DateTime.now().subtract(const Duration(hours: 3)),
-      'icon': Icons.check_circle_rounded,
-      'color': Color(0xFF4CAF50),
-    },
-    {
-      'ticketId': 'TKT-009',
-      'title': 'Aplikasi presensi tidak bisa absen',
-      'action': 'Diteruskan ke TS - Fajar',
-      'time': DateTime.now().subtract(const Duration(days: 1, hours: 2)),
-      'icon': Icons.forward_rounded,
-      'color': Color(0xFF9575CD),
-    },
-    {
-      'ticketId': 'TKT-010',
-      'title': 'Akun mahasiswa tidak terdaftar di SIAKAD',
-      'action': 'Diselesaikan',
-      'time': DateTime.now().subtract(const Duration(days: 2)),
-      'icon': Icons.check_circle_rounded,
-      'color': Color(0xFF4CAF50),
-    },
-    {
-      'ticketId': 'TKT-011',
-      'title': 'Komputer lab rusak total',
-      'action': 'Diteruskan ke TS - Dimas',
-      'time': DateTime.now().subtract(const Duration(days: 2, hours: 5)),
-      'icon': Icons.forward_rounded,
-      'color': Color(0xFF9575CD),
-    },
-    {
-      'ticketId': 'TKT-012',
-      'title': 'Lupa password portal jurnal',
-      'action': 'Diselesaikan',
-      'time': DateTime.now().subtract(const Duration(days: 3)),
-      'icon': Icons.check_circle_rounded,
-      'color': Color(0xFF4CAF50),
-    },
-    {
-      'ticketId': 'TKT-013',
-      'title': 'Sinkronisasi data dosen error',
-      'action': 'Diselesaikan',
-      'time': DateTime.now().subtract(const Duration(days: 4)),
-      'icon': Icons.check_circle_rounded,
-      'color': Color(0xFF4CAF50),
-    },
-  ];
-
-  String _formatDate(DateTime time) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-    ];
-    return '${time.day} ${months[time.month - 1]} ${time.year}';
-  }
-
-  Map<String, List<Map<String, dynamic>>> get _groupedHistory {
-    final Map<String, List<Map<String, dynamic>>> grouped = {};
-    for (var item in _history) {
-      final dateKey = _formatDate(item['time'] as DateTime);
-      grouped.putIfAbsent(dateKey, () => []).add(item);
-    }
-    return grouped;
-  }
-
   @override
-  Widget build(BuildContext context) {
-    final grouped = _groupedHistory;
-    final resolvedCount =
-        _history.where((h) => h['action'] == 'Diselesaikan').length;
-    final forwardedCount = _history.length - resolvedCount;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(helpdeskHistoryProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1EFE8),
       body: SafeArea(
-        bottom: false,
         child: Column(
           children: [
             // Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -122,11 +47,11 @@ class _HelpdeskHistoryScreenState extends State<HelpdeskHistoryScreen> {
                       ),
                     ),
                   ),
-                  Column(
+                  const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Riwayat Tugas',
+                      Text(
+                        'History',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -134,35 +59,13 @@ class _HelpdeskHistoryScreenState extends State<HelpdeskHistoryScreen> {
                           letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
-                        'Histori tiket yang sudah ditangani',
+                        'Riwayat aktivitas tiket kamu',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white70,
                           fontSize: 13,
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _miniStat(
-                              icon: Icons.check_circle_rounded,
-                              label: 'Diselesaikan',
-                              value: '$resolvedCount',
-                              color: const Color(0xFF4CAF50),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _miniStat(
-                              icon: Icons.forward_rounded,
-                              label: 'Diteruskan',
-                              value: '$forwardedCount',
-                              color: const Color(0xFF9575CD),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
@@ -171,33 +74,97 @@ class _HelpdeskHistoryScreenState extends State<HelpdeskHistoryScreen> {
             ),
 
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: grouped.entries.map((entry) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          left: 4,
-                          bottom: 10,
-                          top: 8,
-                        ),
-                        child: Text(
-                          entry.key,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[500],
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+              child: historyAsync.when(
+                loading: () =>
+                const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (history) {
+                  if (history.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'Belum ada riwayat aktivitas',
+                        style: TextStyle(color: Colors.grey[500]),
                       ),
-                      ...entry.value.map((item) => _historyItem(item)),
-                      const SizedBox(height: 8),
-                    ],
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async =>
+                        ref.refresh(helpdeskHistoryProvider.future),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: history.length,
+                      itemBuilder: (context, index) {
+                        final item = history[index];
+                        final meta = _statusMeta(item['status'] as String?);
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryNavy.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: meta.color.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(meta.icon,
+                                    color: meta.color, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item['ticket_title'] as String? ?? '-',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryNavy,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      item['description'] as String? ?? '-',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatTimestamp(
+                                          item['timestamp'] as String?),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[400],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   );
-                }).toList(),
+                },
               ),
             ),
           ],
@@ -206,115 +173,33 @@ class _HelpdeskHistoryScreenState extends State<HelpdeskHistoryScreen> {
     );
   }
 
-  Widget _miniStat({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  ({IconData icon, Color color}) _statusMeta(String? status) {
+    switch (status) {
+      case 'in_progress':
+        return (icon: Icons.autorenew_rounded, color: accentGold);
+      case 'forwarded':
+        return (icon: Icons.forward_rounded, color: primaryBlue);
+      case 'close':
+        return (icon: Icons.check_circle_rounded, color: Colors.green);
+      case 'open':
+        return (icon: Icons.confirmation_number_rounded, color: primaryBlue);
+      default:
+        return (icon: Icons.info_outline_rounded, color: Colors.grey);
+    }
   }
 
-  Widget _historyItem(Map<String, dynamic> item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: primaryNavy.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: (item['color'] as Color).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              item['icon'] as IconData,
-              color: item['color'] as Color,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['ticketId'] as String,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[400],
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  item['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: primaryNavy,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  item['action'] as String,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: (item['color'] as Color),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatTimestamp(String? isoString) {
+    if (isoString == null) return '-';
+    final date = DateTime.tryParse(isoString);
+    if (date == null) return '-';
+
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inMinutes < 1) return 'Baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

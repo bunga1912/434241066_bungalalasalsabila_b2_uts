@@ -177,9 +177,12 @@ class AdminDashboardScreen extends ConsumerWidget {
                                   color: accentGold,
                                 ),
                                 const SizedBox(width: 8),
+                                // FIX: key stats sebelumnya 'closed' (typo,
+                                // tidak pernah match), sekarang 'close'
+                                // konsisten dengan TicketRepository.getTicketStats().
                                 _headerStatCard(
                                   label: 'Closed',
-                                  value: '${stats['closed'] ?? 0}',
+                                  value: '${stats['close'] ?? 0}',
                                   icon: Icons.check_circle_rounded,
                                   color: const Color(0xFFA5D6A7),
                                 ),
@@ -420,14 +423,22 @@ class AdminDashboardScreen extends ConsumerWidget {
         statusColor = const Color(0xFF4CAF50);
         statusLabel = 'Resolved';
         break;
-      case 'closed':
+      case 'close':
         statusColor = Colors.grey;
-        statusLabel = 'Closed';
+        statusLabel = 'Close';
         break;
       default:
         statusColor = Colors.grey;
         statusLabel = status;
     }
+
+    // FIX: sebelumnya menampilkan ticket['id'] (UUID panjang). Sekarang
+    // pakai ticket['ticket_number'] yang diformat jadi "TKT-0001", dengan
+    // fallback ke potongan UUID kalau ticket_number belum ada (data lama).
+    final ticketNumber = ticket['ticket_number'];
+    final displayNumber = ticketNumber != null
+        ? 'TKT-${ticketNumber.toString().padLeft(4, '0')}'
+        : (ticket['id']?.toString() ?? '');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -463,7 +474,7 @@ class AdminDashboardScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  ticket['id'] ?? '',
+                  displayNumber,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -483,7 +494,9 @@ class AdminDashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  ticket['user_name'] ?? '',
+                  // FIX: key hasil getRecentTickets() adalah 'created_by_name',
+                  // bukan 'user_name' (sebelumnya selalu kosong).
+                  ticket['created_by_name'] ?? '',
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey[500],

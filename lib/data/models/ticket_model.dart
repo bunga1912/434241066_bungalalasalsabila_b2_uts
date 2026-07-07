@@ -2,6 +2,11 @@ import 'ticket_history_model.dart';
 
 class TicketModel {
   final String id;
+
+  /// Nomor urut tiket yang human-friendly, misal 1, 2, 3...
+  /// Ditampilkan di UI sebagai "TKT-0001", bukan UUID mentah.
+  final int ticketNumber;
+
   final String title;
   final String description;
   final String status;
@@ -25,6 +30,7 @@ class TicketModel {
 
   TicketModel({
     required this.id,
+    required this.ticketNumber,
     required this.title,
     required this.description,
     required this.status,
@@ -37,12 +43,15 @@ class TicketModel {
     this.history = const [],
   });
 
+  /// Nomor tiket yang sudah diformat untuk ditampilkan, misal "TKT-0001"
+  String get displayNumber => 'TKT-${ticketNumber.toString().padLeft(4, '0')}';
+
   factory TicketModel.fromMap(Map<String, dynamic> map) {
-    // Jika response sudah include ticket_history (lewat join), parse sekalian
     final rawHistory = map['ticket_history'] as List?;
 
     return TicketModel(
       id: map['id'],
+      ticketNumber: map['ticket_number'] ?? 0,
       title: map['title'],
       description: map['description'],
       status: map['status'],
@@ -73,6 +82,7 @@ class TicketModel {
   /// Salin model dengan field yang diubah
   TicketModel copyWith({
     String? id,
+    int? ticketNumber,
     String? title,
     String? description,
     String? status,
@@ -86,6 +96,7 @@ class TicketModel {
   }) {
     return TicketModel(
       id: id ?? this.id,
+      ticketNumber: ticketNumber ?? this.ticketNumber,
       title: title ?? this.title,
       description: description ?? this.description,
       status: status ?? this.status,
@@ -99,6 +110,9 @@ class TicketModel {
     );
   }
 
+  /// PENTING: status penutupan tiket memakai kata 'close' (TANPA huruf "d"),
+  /// konsisten dengan yang disimpan TicketRepository.closeTicket().
+  /// Jangan tulis 'closed' di mana pun, supaya tidak mismatch lagi.
   String get statusLabel {
     switch (status) {
       case 'open':
@@ -109,7 +123,9 @@ class TicketModel {
         return 'Sedang_Dikerjakan';
       case 'forwarded':
         return 'Diteruskan ke TS';
-      case 'closed':
+      case 'resolved':
+        return 'Selesai';
+      case 'close':
         return 'Ditutup';
       default:
         return status;

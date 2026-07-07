@@ -139,10 +139,16 @@ class TicketRepository {
   // ---------------------------------------------------------------------------
 
   /// Admin men-assign tiket ke helpdesk (UUID)
+  ///
+  /// [actor] harus berupa UUID user (kolom `ticket_history.actor` bertipe uuid).
+  /// Kalau tidak diisi eksplisit oleh pemanggil, akan diambil dari user yang
+  /// sedang login (auth.currentUser), dan sebagai fallback terakhir memakai
+  /// helpdeskId itu sendiri supaya tidak pernah mengirim string non-uuid
+  /// seperti "Admin".
   Future<void> assignToHelpdesk(
       String ticketId,
       String helpdeskId, {
-        String actor = 'Admin',
+        String? actor,
       }) async {
     await _client.from('tickets').update({
       'status': 'in_progress',
@@ -153,15 +159,21 @@ class TicketRepository {
       ticketId: ticketId,
       status: 'in_progress',
       description: 'Ditugaskan ke helpdesk dan mulai dikerjakan',
-      actor: actor,
+      actor: actor ?? _client.auth.currentUser?.id ?? helpdeskId,
     );
   }
 
   /// Helpdesk meneruskan tiket ke Technical Support (UUID)
+  ///
+  /// [actor] harus berupa UUID user (kolom `ticket_history.actor` bertipe uuid).
+  /// Kalau tidak diisi eksplisit oleh pemanggil, akan diambil dari user yang
+  /// sedang login (auth.currentUser), dan sebagai fallback terakhir memakai
+  /// tsId itu sendiri supaya tidak pernah mengirim string non-uuid
+  /// seperti "Helpdesk".
   Future<void> forwardToTechnicalSupport(
       String ticketId,
       String tsId, {
-        String actor = 'Helpdesk',
+        String? actor,
         String? note,
       }) async {
     await _client.from('tickets').update({
@@ -175,7 +187,7 @@ class TicketRepository {
       description: note != null && note.isNotEmpty
           ? 'Diteruskan ke TS — $note'
           : 'Diteruskan ke Technical Support',
-      actor: actor,
+      actor: actor ?? _client.auth.currentUser?.id ?? tsId,
     );
   }
 
@@ -211,12 +223,40 @@ class TicketRepository {
         .toList();
   }
 
+  /// Ambil semua riwayat yang dilakukan oleh satu user (actor) tertentu,
+  /// beserta judul tiketnya, terbaru duluan. Dipakai untuk halaman
+  /// History milik helpdesk/TS (menggantikan halaman Notifikasi).
+  ///
+  /// Catatan: query ini mengasumsikan ada relasi foreign key dari
+  /// ticket_history.ticket_id -> tickets.id sehingga embed `tickets(title)`
+  /// bisa dipakai. Kalau Supabase tidak otomatis mendeteksi relasinya,
+  /// sesuaikan nama constraint FK-nya, misal:
+  /// `tickets!ticket_history_ticket_id_fkey(title)`.
+  Future<List<Map<String, dynamic>>> getHistoryByActor(String actorId) async {
+    final response = await _client
+        .from('ticket_history')
+        .select('id, ticket_id, status, description, timestamp, tickets(title)')
+        .eq('actor', actorId)
+        .order('timestamp', ascending: false);
+
+    return (response as List).map((row) {
+      return {
+        'id': row['id'],
+        'ticket_id': row['ticket_id'],
+        'status': row['status'],
+        'description': row['description'],
+        'timestamp': row['timestamp'],
+        'ticket_title': row['tickets']?['title'] ?? '-',
+      };
+    }).toList();
+  }
+
   /// Internal helper — tulis satu baris histori
   Future<void> _addHistory({
     required String ticketId,
     required String status,
     required String description,
-    required String actor, // UUID user atau label role
+    required String actor, // UUID user (kolom actor bertipe uuid)
   }) async {
     await _client.from('ticket_history').insert({
       'ticket_id': ticketId,
@@ -407,7 +447,7 @@ class TicketRepository {
     final ticketsResp = await _client
         .from('tickets')
         .select('assigned_to')
-        .inFilter('status', ['assigned', 'forwarded', 'in_progress']);
+        .inFilter('status', ['forwarded', 'in_progress']);
 
     // Hitung per assignee
     final counts = <String, int>{};

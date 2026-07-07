@@ -259,47 +259,57 @@ class PenggunaDashboardScreen extends ConsumerWidget {
                         loading: () => const Center(
                             child: CircularProgressIndicator()),
                         error: (e, _) => Text('Error: $e'),
-                        data: (stats) => Row(
-                          children: [
-                            Expanded(
-                              child: _statCard(
-                                icon:
-                                Icons.confirmation_number_rounded,
-                                label: 'Total',
-                                value: '${stats['total']}',
-                                color: primaryBlue,
+                        data: (stats) {
+                          // FIX: kartu "Selesai" sebelumnya cuma menghitung
+                          // status 'resolved', padahal tiket yang ditutup
+                          // via closeTicket() statusnya 'close'. Sekarang
+                          // digabung supaya kartu ini merefleksikan semua
+                          // tiket yang sudah tuntas (resolved + close).
+                          final selesai = (stats['resolved'] ?? 0) +
+                              (stats['close'] ?? 0);
+
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: _statCard(
+                                  icon:
+                                  Icons.confirmation_number_rounded,
+                                  label: 'Total',
+                                  value: '${stats['total']}',
+                                  color: primaryBlue,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _statCard(
-                                icon: Icons.pending_actions_rounded,
-                                label: 'Menunggu',
-                                value: '${stats['pending']}',
-                                color: const Color(0xFFE57373),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _statCard(
+                                  icon: Icons.pending_actions_rounded,
+                                  label: 'Menunggu',
+                                  value: '${stats['pending']}',
+                                  color: const Color(0xFFE57373),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _statCard(
-                                icon: Icons.sync_rounded,
-                                label: 'Proses',
-                                value: '${stats['in_progress']}',
-                                color: accentGold,
-                                iconColor: primaryNavy,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _statCard(
+                                  icon: Icons.sync_rounded,
+                                  label: 'Proses',
+                                  value: '${stats['in_progress']}',
+                                  color: accentGold,
+                                  iconColor: primaryNavy,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _statCard(
-                                icon: Icons.check_circle_rounded,
-                                label: 'Selesai',
-                                value: '${stats['resolved']}',
-                                color: const Color(0xFF4CAF50),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _statCard(
+                                  icon: Icons.check_circle_rounded,
+                                  label: 'Selesai',
+                                  value: '$selesai',
+                                  color: const Color(0xFF4CAF50),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -316,7 +326,9 @@ class PenggunaDashboardScreen extends ConsumerWidget {
                     data: (stats) {
                       final total = stats['total'] ?? 0;
                       final resolved = stats['resolved'] ?? 0;
-                      final closed = stats['closed'] ?? 0;
+                      // FIX: key stats sekarang 'close' (bukan 'closed'),
+                      // konsisten dengan penggunaStatsProvider.
+                      final closed = stats['close'] ?? 0;
                       final done = resolved + closed;
                       final progress =
                       total == 0 ? 0.0 : done / total;
@@ -590,6 +602,9 @@ class PenggunaDashboardScreen extends ConsumerWidget {
       case 'resolved':
         statusColor = const Color(0xFF4CAF50);
         break;
+      case 'close':
+        statusColor = Colors.grey;
+        break;
       default:
         statusColor = Colors.grey;
     }
@@ -627,8 +642,9 @@ class PenggunaDashboardScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // FIX: pakai displayNumber ("TKT-0001"), bukan UUID mentah
                 Text(
-                  ticket.id,
+                  ticket.displayNumber,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,

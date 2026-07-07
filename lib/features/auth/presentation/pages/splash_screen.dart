@@ -45,28 +45,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _controller.forward();
 
-    // Tunggu animasi selesai lalu cek session
-    Future.delayed(const Duration(milliseconds: 2200), () {
-      _navigateBasedOnAuth();
+    Future.delayed(const Duration(milliseconds: 2200), () async {
+      await _navigateBasedOnAuth();
     });
   }
 
-  void _navigateBasedOnAuth() {
-    final authState = ref.read(authProvider);
-    authState.whenOrNull(
-      data: (user) => _navigate(user?.role),
-      error: (_, __) => _navigate(null),
-    );
-
-    // Kalau masih loading, tunggu
-    if (authState is AsyncLoading) {
-      ref.listenManual(authProvider, (prev, next) {
-        next.whenOrNull(
-          data: (user) => _navigate(user?.role),
-          error: (_, __) => _navigate(null),
-        );
-      });
+  Future<void> _navigateBasedOnAuth() async {
+    int attempts = 0;
+    while (ref.read(authProvider) is AsyncLoading && attempts < 10) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      attempts++;
     }
+
+    final authState = ref.read(authProvider);
+    final user = authState.valueOrNull;
+    if (mounted) _navigate(user?.role);
   }
 
   void _navigate(String? role) {
@@ -80,7 +73,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       case 'helpdesk':
         targetPage = const HelpdeskShell();
         break;
-      case 'technical support':
+      case 'technical_support':
         targetPage = const TsShell();
         break;
       case 'user':
@@ -199,7 +192,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         height: 32,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(accentGold),
+                          valueColor:
+                          AlwaysStoppedAnimation<Color>(accentGold),
                         ),
                       ),
                     ],

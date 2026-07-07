@@ -26,7 +26,7 @@ class PenggunaActivityScreen extends ConsumerWidget {
         return const Color(0xFFF59E0B);
       case 'resolved':
         return const Color(0xFF4CAF50);
-      case 'closed':
+      case 'close':
         return Colors.grey;
       default:
         return Colors.grey;
@@ -41,7 +41,7 @@ class PenggunaActivityScreen extends ConsumerWidget {
         return Icons.autorenew_rounded;
       case 'resolved':
         return Icons.check_circle_rounded;
-      case 'closed':
+      case 'close':
         return Icons.lock_rounded;
       default:
         return Icons.help_outline_rounded;
@@ -268,9 +268,11 @@ class PenggunaActivityScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ID tiket
+                  // Nomor tiket
+                  // FIX: sebelumnya ticket.id (UUID panjang, bikin overflow
+                  // di layar sempit). Sekarang pakai displayNumber -> "TKT-0001".
                   Text(
-                    ticket.id,
+                    ticket.displayNumber,
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -342,12 +344,21 @@ class PenggunaActivityScreen extends ConsumerWidget {
                         const Icon(Icons.assignment_ind_outlined,
                             size: 12, color: primaryBlue),
                         const SizedBox(width: 4),
-                        Text(
-                          'Ditangani: ${ticket.assignedTo}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: primaryBlue,
-                            fontWeight: FontWeight.w600,
+                        // FIX: dibungkus Expanded + ellipsis supaya nama/ID
+                        // panjang tidak overflow ke luar kartu (sebelumnya
+                        // "Ditangani: <uuid>" meluber ke kanan layar).
+                        // Juga pakai assignedToName jika tersedia dari join,
+                        // supaya tidak lagi menampilkan UUID mentah.
+                        Expanded(
+                          child: Text(
+                            'Ditangani: ${ticket.assignedToName ?? ticket.assignedTo}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: primaryBlue,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

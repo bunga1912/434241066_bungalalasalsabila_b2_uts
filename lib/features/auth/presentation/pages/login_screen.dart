@@ -73,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       case 'helpdesk':
         targetPage = const HelpdeskShell();
         break;
-      case 'technical support':
+      case 'technical_support':
         targetPage = const TsShell();
         break;
       default:
@@ -208,15 +208,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Icon(Icons.error_outline_rounded,
                                     color: Color(0xFFE57373), size: 18),
                                 const SizedBox(width: 8),
-                                Text(
-                                  _errorMessage!,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFFE57373),
+                                // FIX: dibungkus Expanded supaya teks error
+                                // panjang (mis. "Exception: Koneksi timeout
+                                // saat login...") tidak overflow ke kanan
+                                // layar, melainkan wrap ke baris berikutnya.
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFFE57373),
+                                    ),
                                   ),
                                 ),
                               ],

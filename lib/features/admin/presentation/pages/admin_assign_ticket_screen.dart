@@ -19,7 +19,8 @@ class _AdminAssignTicketScreenState
   static const Color primaryBlue = Color(0xFF185FA5);
   static const Color accentGold = Color(0xFFFAC775);
 
-  String? _selectedHelpdesk;
+  String? _selectedHelpdeskId;
+  String? _selectedHelpdeskName;
   bool _isLoading = false;
 
   late String _currentStatus;
@@ -29,22 +30,33 @@ class _AdminAssignTicketScreenState
     super.initState();
     _currentStatus = widget.ticket.status;
   }
+
   void _handleAssign() async {
-    if (_selectedHelpdesk == null) return;
+    if (_selectedHelpdeskId == null) return;
 
     setState(() => _isLoading = true);
 
     try {
       await ref
           .read(adminTicketListProvider.notifier)
-          .assignToHelpdesk(widget.ticket.id, _selectedHelpdesk!);
+          .assignToHelpdesk(widget.ticket.id, _selectedHelpdeskId!);
+
+      // FIX: assignToHelpdesk() sebelumnya cuma me-refresh adminTicketListProvider
+      // (dipakai di halaman daftar tiket), sehingga Dashboard (stats, kategori,
+      // tiket terbaru, helpdesk aktif) masih menampilkan data lama sampai
+      // provider-nya di-invalidate manual seperti ini.
+      ref.invalidate(adminStatsProvider);
+      ref.invalidate(adminCategoryStatsProvider);
+      ref.invalidate(adminRecentTicketsProvider);
+      ref.invalidate(adminHelpdeskActiveProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: primaryNavy,
             content: Text(
-              'Tiket ${widget.ticket.id} berhasil di-assign ke $_selectedHelpdesk',
+              // FIX: pakai displayNumber ("TKT-0001"), bukan UUID mentah
+              'Tiket ${widget.ticket.displayNumber} berhasil di-assign ke $_selectedHelpdeskName',
             ),
             duration: const Duration(seconds: 1),
           ),
@@ -66,6 +78,7 @@ class _AdminAssignTicketScreenState
       }
     }
   }
+
   ({String label, Color color}) _statusMeta(String status) {
     switch (status) {
       case 'open':
@@ -78,6 +91,7 @@ class _AdminAssignTicketScreenState
         return (label: status, color: Colors.grey);
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final helpdeskListAsync = ref.watch(helpdeskListProvider);
@@ -176,22 +190,18 @@ class _AdminAssignTicketScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          // FIX: badge ID pakai displayNumber ("TKT-0001").
+                          // Dibungkus Wrap (bukan Row) supaya kalau 3 badge
+                          // tidak muat dalam satu baris, otomatis lanjut ke
+                          // baris berikutnya alih-alih overflow ke kanan.
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
-                              _badge(widget.ticket.id, primaryBlue),
-                              const SizedBox(width: 8),
+                              _badge(widget.ticket.displayNumber, primaryBlue),
                               _badge(widget.ticket.category, accentGold,
                                   textColor: primaryNavy),
-                              Row(
-                                children: [
-                                  _badge(widget.ticket.id, primaryBlue),
-                                  const SizedBox(width: 8),
-                                  _badge(widget.ticket.category, accentGold,
-                                      textColor: primaryNavy),
-                                  const SizedBox(width: 8),
-                                  _badge(statusMeta.label, statusMeta.color),
-                                ],
-                              ),
+                              _badge(statusMeta.label, statusMeta.color),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -215,10 +225,18 @@ class _AdminAssignTicketScreenState
                               Icon(Icons.person_outline_rounded,
                                   size: 14, color: Colors.grey[400]),
                               const SizedBox(width: 4),
-                              Text(
-                                'Dilaporkan oleh ${widget.ticket.createdBy}',
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.grey[500]),
+                              // FIX: pakai createdByName (hasil join),
+                              // dengan fallback ke UUID kalau nama tidak
+                              // tersedia. Dibungkus Expanded + ellipsis
+                              // supaya tidak overflow.
+                              Expanded(
+                                child: Text(
+                                  'Dilaporkan oleh ${widget.ticket.createdByName ?? widget.ticket.createdBy}',
+                                  style: TextStyle(
+                                      fontSize: 11, color: Colors.grey[500]),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),
@@ -237,7 +255,6 @@ class _AdminAssignTicketScreenState
                     ),
                     const SizedBox(height: 12),
 
-                    // Helpdesk list dari provider
                     helpdeskListAsync.when(
                       loading: () => const Center(
                           child: CircularProgressIndicator()),
@@ -245,10 +262,12 @@ class _AdminAssignTicketScreenState
                       data: (helpdeskList) => Column(
                         children: helpdeskList.map((helpdesk) {
                           final isSelected =
-                              _selectedHelpdesk == helpdesk.name;
+                              _selectedHelpdeskId == helpdesk.id;
                           return GestureDetector(
-                            onTap: () => setState(
-                                    () => _selectedHelpdesk = helpdesk.name),
+                            onTap: () => setState(() {
+                              _selectedHelpdeskId = helpdesk.id;
+                              _selectedHelpdeskName = helpdesk.name;
+                            }),
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(14),
@@ -346,7 +365,7 @@ class _AdminAssignTicketScreenState
                 height: 52,
                 child: ElevatedButton(
                   onPressed:
-                  (_selectedHelpdesk == null || _isLoading)
+                  (_selectedHelpdeskId == null || _isLoading)
                       ? null
                       : _handleAssign,
                   style: ElevatedButton.styleFrom(

@@ -15,9 +15,7 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
     final statsAsync = ref.watch(helpdeskStatsProvider);
     final ticketsAsync = ref.watch(helpdeskTicketListProvider);
     final user = ref.watch(currentHelpdeskProvider);
-    final unreadAsync = ref.watch(helpdeskUnreadCountProvider);
 
-    // Nama tampil tanpa prefix "Helpdesk - "
     final displayName = user?.name ?? '';
 
     return Scaffold(
@@ -28,7 +26,6 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(helpdeskStatsProvider);
             ref.invalidate(helpdeskTicketListProvider);
-            ref.invalidate(helpdeskUnreadCountProvider);
           },
           child: CustomScrollView(
             slivers: [
@@ -112,54 +109,32 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
                                   ),
                                 ],
                               ),
-                              // Notifikasi badge
-                              Stack(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.15),
-                                      borderRadius:
-                                      BorderRadius.circular(14),
-                                      border: Border.all(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.3)),
-                                    ),
-                                    child: const Icon(
-                                      Icons.notifications_outlined,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
+                              // FIX: sebelumnya ikon ini pakai
+                              // helpdeskUnreadCountProvider (badge notifikasi)
+                              // yang sudah dihapus karena tab Notifikasi
+                              // diganti History. Sekarang jadi tombol
+                              // pintasan langsung ke tab History.
+                              GestureDetector(
+                                onTap: () => ref
+                                    .read(helpdeskNavIndexProvider.notifier)
+                                    .state = 2,
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white
+                                        .withValues(alpha: 0.15),
+                                    borderRadius:
+                                    BorderRadius.circular(14),
+                                    border: Border.all(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.3)),
                                   ),
-                                  unreadAsync.when(
-                                    loading: () => const SizedBox(),
-                                    error: (_, __) => const SizedBox(),
-                                    data: (count) => count == 0
-                                        ? const SizedBox()
-                                        : Positioned(
-                                      top: 4,
-                                      right: 4,
-                                      child: Container(
-                                        padding:
-                                        const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFE57373),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Text(
-                                          '$count',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 9,
-                                            fontWeight:
-                                            FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                  child: const Icon(
+                                    Icons.history_rounded,
+                                    color: Colors.white,
+                                    size: 24,
                                   ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
@@ -230,7 +205,7 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            '${stats['assigned']} baru · ${stats['in_progress']} diproses',
+                                            '${stats['assigned'] ?? 0} baru · ${stats['in_progress'] ?? 0} diproses',
                                             style: const TextStyle(
                                                 color: Colors.white70,
                                                 fontSize: 12),
@@ -256,6 +231,7 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
               ),
 
               // ── Stats Grid ───────────────────────────────────────────
+              // Kartu: Ditugaskan, Diproses, Diselesaikan.
               SliverPadding(
                 padding: const EdgeInsets.all(20),
                 sliver: SliverToBoxAdapter(
@@ -276,38 +252,34 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
                         loading: () => const Center(
                             child: CircularProgressIndicator()),
                         error: (e, _) => Text('Error: $e'),
-                        data: (stats) => GridView.count(
-                          crossAxisCount: 2,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 1.4,
+                        data: (stats) => Row(
                           children: [
-                            _statCard(
-                              icon: Icons.assignment_rounded,
-                              label: 'Ditugaskan',
-                              value: '${stats['assigned']}',
-                              color: primaryBlue,
+                            Expanded(
+                              child: _statCard(
+                                icon: Icons.assignment_rounded,
+                                label: 'Ditugaskan',
+                                value: '${stats['assigned'] ?? 0}',
+                                color: primaryBlue,
+                              ),
                             ),
-                            _statCard(
-                              icon: Icons.forward_to_inbox_rounded,
-                              label: 'Diteruskan',
-                              value: '${stats['forwarded']}',
-                              color: const Color(0xFF9575CD),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _statCard(
+                                icon: Icons.sync_rounded,
+                                label: 'Diproses',
+                                value: '${stats['in_progress'] ?? 0}',
+                                color: accentGold,
+                                iconColor: primaryNavy,
+                              ),
                             ),
-                            _statCard(
-                              icon: Icons.sync_rounded,
-                              label: 'Diproses',
-                              value: '${stats['in_progress']}',
-                              color: accentGold,
-                              iconColor: primaryNavy,
-                            ),
-                            _statCard(
-                              icon: Icons.check_circle_rounded,
-                              label: 'Diselesaikan',
-                              value: '${stats['resolved']}',
-                              color: const Color(0xFF4CAF50),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _statCard(
+                                icon: Icons.check_circle_rounded,
+                                label: 'Diselesaikan',
+                                value: '${stats['closed'] ?? 0}',
+                                color: const Color(0xFF4CAF50),
+                              ),
                             ),
                           ],
                         ),
@@ -396,7 +368,7 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
                             children: recent
                                 .map((t) => _taskItem(
                               title: t.title,
-                              ticketId: t.id,
+                              ticketId: t.displayNumber,
                               category: t.category,
                               isNew: t.status == 'assigned',
                             ))
@@ -423,7 +395,7 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
     Color? iconColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -444,13 +416,13 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: iconColor ?? color, size: 20),
+            child: Icon(icon, color: iconColor ?? color, size: 18),
           ),
-          const Spacer(),
+          const SizedBox(height: 10),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: primaryNavy,
               letterSpacing: -0.5,
@@ -460,7 +432,7 @@ class HelpdeskDashboardScreen extends ConsumerWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),

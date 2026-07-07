@@ -33,8 +33,8 @@ class _PenggunaTicketListScreenState
             .toList();
       case 'resolved':
         return tickets.where((t) => t.status == 'resolved').toList();
-      case 'closed':
-        return tickets.where((t) => t.status == 'closed').toList();
+      case 'close':
+        return tickets.where((t) => t.status == 'close').toList();
       default:
         return tickets;
     }
@@ -50,7 +50,7 @@ class _PenggunaTicketListScreenState
         return primaryBlue;
       case 'resolved':
         return const Color(0xFF4CAF50);
-      case 'closed':
+      case 'close':
         return Colors.grey;
       default:
         return Colors.grey;
@@ -152,7 +152,7 @@ class _PenggunaTicketListScreenState
                             _filterChip('all', 'Semua'),
                             _filterChip('active', 'Aktif'),
                             _filterChip('resolved', 'Selesai'),
-                            _filterChip('closed', 'Tertutup'),
+                            _filterChip('close', 'Tertutup'),
                           ],
                         ),
                       ),
@@ -267,8 +267,13 @@ class _PenggunaTicketListScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // FIX: sebelumnya menampilkan ticket.id (UUID mentah,
+                      // panjang dan tidak mudah dibaca user). Sekarang
+                      // pakai ticket.displayNumber -> "TKT-0001", dst.
+                      // UUID aslinya (ticket.id) tetap dipakai penuh di
+                      // belakang layar untuk navigasi & query, tidak diubah.
                       Text(
-                        ticket.id,
+                        ticket.displayNumber,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -343,7 +348,7 @@ class _PenggunaTicketListScreenState
                       size: 14, color: primaryBlue),
                   const SizedBox(width: 4),
                   Text(
-                    'Ditangani oleh: ${ticket.assignedTo}',
+                    'Ditangani oleh: ${ticket.assignedToName ?? ticket.assignedTo}',
                     style: const TextStyle(
                       fontSize: 11,
                       color: primaryBlue,

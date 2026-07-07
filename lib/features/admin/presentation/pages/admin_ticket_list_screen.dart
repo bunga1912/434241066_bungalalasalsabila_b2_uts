@@ -154,9 +154,7 @@ class _AdminTicketListScreenState
                           children: [
                             _filterChip('all', 'Semua'),
                             _filterChip('open', 'Open'),
-                            _filterChip('assigned', 'Assigned'),
                             _filterChip('in_progress', 'Sedang Dikerjakan'),
-                            _filterChip('forwarded', 'Diteruskan ke TS'),
                             _filterChip('close', 'Selesai'),
                           ],
                         ),
@@ -286,8 +284,9 @@ class _AdminTicketListScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // FIX: pakai displayNumber ("TKT-0001"), bukan UUID
                       Text(
-                        ticket.id,
+                        ticket.displayNumber,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -339,9 +338,16 @@ class _AdminTicketListScreenState
                 Icon(Icons.person_outline_rounded,
                     size: 14, color: Colors.grey[400]),
                 const SizedBox(width: 4),
-                Text(
-                  ticket.createdBy,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                // FIX: pakai createdByName (hasil join), fallback ke UUID.
+                // Dibungkus Expanded + ellipsis supaya tidak overflow kalau
+                // nama panjang / fallback UUID kepanjangan.
+                Expanded(
+                  child: Text(
+                    ticket.createdByName ?? ticket.createdBy,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Icon(Icons.access_time_rounded,
@@ -360,12 +366,17 @@ class _AdminTicketListScreenState
                   Icon(Icons.assignment_ind_outlined,
                       size: 14, color: primaryBlue),
                   const SizedBox(width: 4),
-                  Text(
-                    'Ditugaskan ke: ${ticket.assignedTo}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: primaryBlue,
-                      fontWeight: FontWeight.w600,
+                  // FIX: pakai assignedToName (hasil join), fallback ke UUID.
+                  Expanded(
+                    child: Text(
+                      'Ditugaskan ke: ${ticket.assignedToName ?? ticket.assignedTo}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: primaryBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

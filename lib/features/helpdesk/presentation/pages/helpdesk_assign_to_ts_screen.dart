@@ -20,7 +20,12 @@ class _HelpdeskAssignToTsScreenState
   static const Color accentGold = Color(0xFFFAC775);
   static const Color purple = Color(0xFF9575CD);
 
-  String? _selectedTs;
+  // FIX: sebelumnya _selectedTs menyimpan ts.name (String) lalu dikirim
+  // ke repository yang mengharapkan uuid -> menyebabkan Postgres error
+  // "invalid input syntax for type uuid". Sekarang dipisah: id (uuid)
+  // untuk dikirim ke backend, name hanya untuk ditampilkan.
+  String? _selectedTsId;
+  String? _selectedTsName;
   final _noteController = TextEditingController();
   bool _isLoading = false;
 
@@ -31,7 +36,7 @@ class _HelpdeskAssignToTsScreenState
   }
 
   void _handleForward() async {
-    if (_selectedTs == null) return;
+    if (_selectedTsId == null) return;
 
     setState(() => _isLoading = true);
 
@@ -40,7 +45,7 @@ class _HelpdeskAssignToTsScreenState
           .read(helpdeskTicketListProvider.notifier)
           .forwardToTs(
         widget.ticket.id,
-        _selectedTs!,
+        _selectedTsId!,
         note: _noteController.text.trim(),
       );
 
@@ -49,7 +54,7 @@ class _HelpdeskAssignToTsScreenState
           SnackBar(
             backgroundColor: purple,
             content: Text(
-                'Tiket ${widget.ticket.id} diteruskan ke $_selectedTs'),
+                'Tiket ${widget.ticket.id} diteruskan ke $_selectedTsName'),
             duration: const Duration(seconds: 1),
           ),
         );
@@ -165,10 +170,17 @@ class _HelpdeskAssignToTsScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          // FIX: Wrap + id dipotong 8 karakter supaya tidak
+                          // overflow ke kanan layar (sama seperti di admin).
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
-                              _badge(widget.ticket.id, primaryBlue),
-                              const SizedBox(width: 8),
+                              _badge(
+                                  widget.ticket.id.length > 8
+                                      ? widget.ticket.id.substring(0, 8)
+                                      : widget.ticket.id,
+                                  primaryBlue),
                               _badge(widget.ticket.category, accentGold,
                                   textColor: primaryNavy),
                             ],
@@ -209,10 +221,15 @@ class _HelpdeskAssignToTsScreenState
                       error: (e, _) => Text('Error: $e'),
                       data: (tsList) => Column(
                         children: tsList.map((ts) {
-                          final isSelected = _selectedTs == ts.name;
+                          // FIX: dibandingkan berdasarkan id (uuid), bukan name
+                          final isSelected = _selectedTsId == ts.id;
                           return GestureDetector(
-                            onTap: () => setState(
-                                    () => _selectedTs = ts.name),
+                            onTap: () => setState(() {
+                              // FIX: simpan id (uuid) untuk dikirim ke
+                              // backend, name terpisah hanya untuk tampilan.
+                              _selectedTsId = ts.id;
+                              _selectedTsName = ts.name;
+                            }),
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(14),
@@ -339,7 +356,7 @@ class _HelpdeskAssignToTsScreenState
                 height: 52,
                 child: ElevatedButton(
                   onPressed:
-                  (_selectedTs == null || _isLoading)
+                  (_selectedTsId == null || _isLoading)
                       ? null
                       : _handleForward,
                   style: ElevatedButton.styleFrom(

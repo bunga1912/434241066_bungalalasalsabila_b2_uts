@@ -99,13 +99,13 @@ FutureProvider.autoDispose<List<UserModel>>((ref) async {
 /// Selected nav index untuk helpdesk shell
 final helpdeskNavIndexProvider = StateProvider<int>((ref) => 0);
 
-/// Jumlah tiket baru (badge notifikasi)
-final helpdeskUnreadCountProvider =
-FutureProvider.autoDispose<int>((ref) async {
+/// Riwayat aksi (assign/forward/close) yang pernah dilakukan oleh
+/// helpdesk yang sedang login. Dipakai oleh HelpdeskHistoryScreen,
+/// menggantikan helpdeskUnreadCountProvider/NotificationScreen lama.
+final helpdeskHistoryProvider =
+FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final repo = ref.watch(helpdeskTicketRepositoryProvider);
   final user = ref.watch(currentHelpdeskProvider);
-  if (user == null) return 0;
-
-  final tickets = await repo.getTicketsByAssignee(user.id);
-  return tickets.where((t) => t.status == 'assigned').length;
+  if (user == null) return [];
+  return repo.getHistoryByActor(user.id);
 });

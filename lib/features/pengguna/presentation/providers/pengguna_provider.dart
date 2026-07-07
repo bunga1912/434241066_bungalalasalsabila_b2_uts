@@ -76,30 +76,32 @@ final penggunaTicketProvider = StateNotifierProvider.autoDispose<
   final userId = ref.watch(currentUserProvider)?.id ?? '';
 
   return PenggunaTicketNotifier(repository, userId);
-  });
+});
 
-/// Statistik tiket pengguna
+/// Statistik tiket pengguna.
+/// PENTING: key & pengecekan status pakai 'close' (TANPA huruf "d"),
+/// konsisten dengan TicketRepository.closeTicket() dan TicketModel.statusLabel.
 final penggunaStatsProvider =
 FutureProvider.autoDispose<Map<String, int>>((ref) async {
-final repo = ref.watch(penggunaTicketRepositoryProvider);
-final userId = ref.watch(currentUserProvider)?.id ?? '';
+  final repo = ref.watch(penggunaTicketRepositoryProvider);
+  final userId = ref.watch(currentUserProvider)?.id ?? '';
 
-final tickets = await repo.getTicketsByCreator(userId);
+  final tickets = await repo.getTicketsByCreator(userId);
 
-return {
-'total': tickets.length,
-'pending': tickets.where((t) => t.status == 'pending').length,
-'in_progress': tickets
-    .where(
-(t) =>
-t.status == 'assigned' ||
-t.status == 'in_progress' ||
-t.status == 'forwarded',
-)
-    .length,
-'resolved': tickets.where((t) => t.status == 'resolved').length,
-'closed': tickets.where((t) => t.status == 'closed').length,
-};
+  return {
+    'total': tickets.length,
+    'pending': tickets.where((t) => t.status == 'pending').length,
+    'in_progress': tickets
+        .where(
+          (t) =>
+      t.status == 'assigned' ||
+          t.status == 'in_progress' ||
+          t.status == 'forwarded',
+    )
+        .length,
+    'resolved': tickets.where((t) => t.status == 'resolved').length,
+    'close': tickets.where((t) => t.status == 'close').length,
+  };
 });
 
 final penggunaNavIndexProvider = StateProvider<int>((ref) => 0);

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'pages/admin_dashboard_screen.dart';
 import 'pages/admin_ticket_list_screen.dart';
 import 'pages/admin_manage_users_screen.dart';
-import 'pages/admin_activity_screen.dart';
+import 'pages/admin_history_screen.dart';
 import '../../shared/presentation/pages/profile_screen.dart';
 
 final adminNavIndexProvider = StateProvider<int>((ref) => 0);
